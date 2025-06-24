@@ -29,7 +29,7 @@
 <br />
 <div align="center">
   <a href="">
-    <img src="images/WAPP.jpg" alt="Logo" width="400" height="280">
+    <img src="WAPP.jpg" alt="Logo" width="400" height="280">
   </a>
 </div>
 <br>
