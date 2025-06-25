@@ -24,22 +24,199 @@
   <script src="https://js.arcgis.com/4.32/"></script>
 
   <!-- Load Map components from CDN-->
-  <script
-    type="module"
-    src="https://js.arcgis.com/map-components/4.32/arcgis-map-components.esm.js"
-  ></script>
-  </head>
+  <script type="module" src="https://js.arcgis.com/map-components/4.32/arcgis-map-components.esm.js"></script>
 
-  <body>
-    <arcgis-map basemap="topo-vector" zoom="4" center="15, 65"></arcgis-map>
-    <script>
-      // Get a reference to the map component
-      const arcgisMap = document.querySelector("arcgis-map");
+  <script src="https://js.arcgis.com/4.32/"></script>
 
-      // Listen for when the component is ready
-      arcgisMap.addEventListener("arcgisViewReadyChange", (event) => {
-        console.log('Map component is ready', event);
+
+</head>
+
+<body>
+  <arcgis-scene basemap="hybrid" camera-position="-82.7146158, 35.1732228, 5000" camera-tilt="65" camera-heading="">
+    <arcgis-layer-list position="bottom-right"
+    filter-text="test"></arcgis-layer-list>
+    <arcgis-search position="top-right"></arcgis-search>
+    <arcgis-navigation-toggle position="top-left"></arcgis-navigation-toggle>
+    <arcgis-area-measurement-3d position="bottom-left"></arcgis-area-measurement-3d>
+  </arcgis-scene>
+
+  <script>
+    require(["esri/symbols/PointSymbol3D", "esri/layers/FeatureLayer", "esri/rest/serviceArea", "esri/rest/support/ServiceAreaParameters",
+      "esri/rest/support/FeatureSet", "esri/Graphic", "esri/rest/support/Query"], (PointSymbol3D, FeatureLayer, serviceArea, ServiceAreaParams, FeatureSet, Graphic, Query) => {
+
+        const arcgisScene = document.querySelector("arcgis-scene");
+
+        const esriConfig = {
+          apiKey: "AAPTxy8BH1VEsoebNVZXo8HurHTqhc1NC69eM4rltulP43R_HcRU2dGydAtbSg26Eb2LNiG9Q5XKC44rC3lwyjSZ9-hGRmZPLJjHOO-bplWwKDP_nFevhHVDaNa_Oz4oJedPrLLVyOyMfnELPMaC5QIbZJ6hIdfNtuM1iWBL_v1afu-qSUDaYeCiwOzJYsdU0iSbeTr9kOA-P8NSHp61TaRlRZCIaTy5P9-PB7dZmccr2CAco_vidRzvEF-iFh3xFzbTAT1_DDriAZq8"
+        };
+
+        const serviceAreaUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World/solveServiceArea";
+
+        const verticalOffset = {
+          screenLength: 75,
+          maxWorldLength: 600,
+          minWorldLength: 35
+        };
+
+        const labelClass = {  // autocasts as new LabelClass()
+          symbol: {
+            type: "label-3d", // autocasts as new LabelSymbol3D()
+            symbolLayers: [
+              {
+                type: "text", // autocasts as new TextSymbol3DLayer()
+                material: {
+                  color: "purple"
+                },
+                font: {  // autocasts as new Font()
+                  family: "Just Another Hand",
+                  weight: "bold"
+                },
+                size: 22
+              }
+            ],
+            verticalOffset: verticalOffset,
+            callout: {
+              type: "line", // autocasts as new LineCallout3D()
+              color: "white",
+              size: 2,
+              color: [0, 0, 0],
+              border: {
+                color: [255, 255, 255, 0.7]
+              }
+            }
+          },
+          labelPlacement: "above-center",
+          labelExpressionInfo: {
+            expression: "$feature.Trail_Name"
+          }
+        };
+
+
+        const iconSymbol = {
+          type: "simple",
+          symbol: {
+            type: "point-3d",
+            symbolLayers: [
+              {
+                type: "object", // autocasts as new IconSymbol3DLayer()
+                resource: {
+                  primitive: "sphere"
+                },
+                width: 200,
+                material: {
+                  color: "blue"
+                }
+              }
+            ]
+
+          }
+        };
+
+
+        arcgisScene.addEventListener("arcgisViewReadyChange", () => {
+          const layer = new FeatureLayer({
+            url: "https://services1.arcgis.com/uujCiiEZAflDbdxE/arcgis/rest/services/Pisgah_Mtn_Bike_Trailheads/FeatureServer/0",
+            renderer: iconSymbol,
+            labelingInfo: labelClass
+          });
+
+          arcgisScene.addEventListener("arcgisViewClick", (event) => {
+
+            const locationGraphic = createGraphic(event.detail.mapPoint);
+
+            const driveTimeCutoffs = [10, 20, 30]; // Minutes
+            const serviceAreaParams = createServiceAreaParams(
+              locationGraphic,
+              driveTimeCutoffs,
+              arcgisScene.spatialReference
+            );
+
+            solveServiceArea(serviceAreaUrl, serviceAreaParams);
+
+          });
+
+          // Create the location graphic
+          function createGraphic(point) {
+            arcgisScene.graphics.removeAll();
+            const graphic = new Graphic({
+              geometry: point,
+              symbol: {
+                type: "simple-marker",
+                color: "white",
+                size: 8
+              }
+            });
+
+            arcgisScene.graphics.add(graphic);
+            return graphic;
+          }
+
+          function createServiceAreaParams(locationGraphic, driveTimeCutoffs, outSpatialReference) {
+
+            // Create one or more locations (facilities) to solve for
+            const featureSet = new FeatureSet({
+              features: [locationGraphic]
+            });
+
+            // Set all of the input parameters for the service
+            const taskParameters = new ServiceAreaParams({
+              facilities: featureSet,
+              defaultBreaks: driveTimeCutoffs,
+              trimOuterPolygon: true,
+              outSpatialReference: outSpatialReference
+              // outputPolygons: "detailed"
+            });
+            return taskParameters;
+
+          }
+
+          function solveServiceArea(url, serviceAreaParams) {
+            return serviceArea.solve(url, serviceAreaParams).then(
+              (result) => {
+                if (result.serviceAreaPolygons.features.length) {
+                  // Draw each service area polygon
+                  result.serviceAreaPolygons.features.forEach((graphic) => {
+                    graphic.symbol = {
+                      type: "simple-fill",
+                      color: "rgba(255,50,50,.25)"
+                    };
+                    // console.log(graphic.geometry);
+                    let geo = graphic.geometry;
+
+                    arcgisScene.graphics.add(graphic, 0);
+
+
+
+                    const query = new Query();
+                    query.geometry = geo;
+                    query.spatialRelationship = "intersects";
+                    query.returnGeometry = true;
+                    query.outFields = ["*"];
+
+                    layer.queryFeatures(query).then(function (results) {
+                      console.log(results.features)
+                    });
+
+
+                  });
+
+
+
+
+
+                };
+              })
+          }
+
+
+
+          arcgisScene.map.add(layer);
+
+          console.log(`${layer} was added to the map`);
+        });
       });
-    </script>
-  </body>
+
+  </script>
+
+</body>
 </html>
