@@ -64,7 +64,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Application
 
-Live version hosted on web server here: https://www.thepisgahgeographer.com/index_Arcgis.html
+Live version hosted on web server here: https://thepisgahgeographer.com/NearMe.html
 
 This app leverages the 3D scene environment and tooling within the JS SDK. It details points of interest in western NC to run service area solves from a location created via user input. 
 
