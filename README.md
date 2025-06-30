@@ -66,12 +66,12 @@
 
 Live version hosted on web server here: https://www.thepisgahgeographer.com/index_Arcgis.html
 
-This app leverages the 3D scene environment and tooling within the JS SDK. It details mountain bike trailheads in western NC to run service area solves from a location created via user input. 
+This app leverages the 3D scene environment and tooling within the JS SDK. It details points of interest in western NC to run service area solves from a location created via user input. 
 
 App works through the following concepts:
 * Leveraging scene components
   - Serves as the 3D scene container for the application
-* Utilizing core api functionality via the well-known require processes
+* Utilizing core api functionality
 * Creation of a 3D label class and 3D symbology for the feature layer point data.
 * Creating and attaching event listener for changes on view state.
 * Creation of a click event
